@@ -43,6 +43,8 @@ func (r *Requester) GetWeather() (*entity.Weather, error) {
 		return nil, err
 	}
 
+	defer res.Body.Close()
+
 	weather := struct {
 		Current struct {
 			Temperature float32 `json:"temperature_2m"`
