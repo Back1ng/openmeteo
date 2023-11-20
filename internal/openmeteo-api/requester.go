@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 type Requester struct {
@@ -22,7 +21,7 @@ func New(cache *weather_cache.Cache) Requester {
 	}
 }
 
-func (r *Requester) GetWeather() (*entity.Weather, error) {
+func (r *Requester) GetWeather(ctx context.Context) (*entity.Weather, error) {
 	openMeteoURL, _ := url.Parse(
 		fmt.Sprintf(
 			"https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f&current=temperature_2m",
@@ -30,8 +29,6 @@ func (r *Requester) GetWeather() (*entity.Weather, error) {
 			60.597647,
 		),
 	)
-
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", openMeteoURL.String(), nil)
 	if err != nil {
