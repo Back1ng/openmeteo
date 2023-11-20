@@ -1,56 +1,79 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"github.com/Back1ng/openmeteo/internal/entity"
-	gismeteo_api "github.com/Back1ng/openmeteo/internal/openmeteo-api"
-	weather_cache "github.com/Back1ng/openmeteo/internal/weather-cache"
+	openmeteoapi "github.com/Back1ng/openmeteo/internal/openmeteo-api"
+	weathercache "github.com/Back1ng/openmeteo/internal/weather-cache"
+	"log"
 	"net/http"
+	"time"
 )
 
-func Run() {
-	cache := weather_cache.New()
+func WriteResponse(w http.ResponseWriter, s string) {
+	_, err := fmt.Fprintf(w, "Current weather: %v", s)
+	if err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		w.WriteHeader(500)
+	}
+}
 
-	api := gismeteo_api.New(cache)
+func GetWeather(api openmeteoapi.Requester, cache *weathercache.Cache, w http.ResponseWriter) bool {
+	if cache.IsValid() {
+		weatherCache, _ := cache.Get()
+
+		WriteResponse(w, fmt.Sprint(weatherCache.Temp))
+
+		return true
+	}
+
+	weather, err := api.GetWeather()
+	if err != nil {
+		weatherCache, _ := cache.Get()
+
+		WriteResponse(w, fmt.Sprint(weatherCache.Temp))
+
+		return true
+	}
+
+	cache.Store(entity.Weather{
+		Temp: weather.Temp,
+	})
+
+	WriteResponse(w, fmt.Sprint(weather.Temp))
+
+	return true
+}
+
+func Run() {
+	cache := weathercache.New()
+	api := openmeteoapi.New(cache)
+
+	weather, err := api.GetWeather()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cache.Store(entity.Weather{
+		Temp: weather.Temp,
+	})
 
 	http.HandleFunc("/api/weather", func(w http.ResponseWriter, r *http.Request) {
-		if cache.IsValid() {
-			weatherCache, ok := cache.Get()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		done := make(chan bool)
+		go func() {
+			done <- GetWeather(api, cache, w)
+		}()
 
-			if ok {
-				_, err := fmt.Fprintf(w, "Current weather: %v", weatherCache.Temp)
-				if err != nil {
-					fmt.Fprintf(w, "Error: %v", err)
-					w.WriteHeader(500)
-				}
-				return
-			}
-		}
+		select {
+		case <-ctx.Done():
+			weatherCache, _ := cache.Get()
 
-		weather, err := api.GetWeather()
-
-		if err != nil {
-			fmt.Fprint(w, err)
-			w.WriteHeader(500)
+			WriteResponse(w, fmt.Sprint(weatherCache.Temp))
+		case <-done:
 			return
-		}
-
-		cache.Store(entity.Weather{
-			Temp: weather.Temp,
-		})
-
-		weatherCache, ok := cache.Get()
-		if ok {
-			_, err := fmt.Fprintf(w, "Current weather: %v", weatherCache.Temp)
-			if err != nil {
-				fmt.Fprintf(w, "Error: %v", err)
-				w.WriteHeader(500)
-				return
-			}
-		}
-
-		if !ok {
-			fmt.Fprint(w, "Couldn't get the weather...")
 		}
 	})
 

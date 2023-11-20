@@ -28,10 +28,6 @@ func (c *Cache) Get() (*entity.Weather, bool) {
 		return nil, false
 	}
 
-	if c.Weather.Temp == float32(0) {
-		return nil, false
-	}
-
 	return &c.Weather, true
 }
 
@@ -45,5 +41,5 @@ func (c *Cache) Store(weather entity.Weather) {
 func (c *Cache) IsValid() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return time.Now().Before(c.ttl)
+	return time.Now().Before(c.ttl) && c.Weather.Temp != float32(0)
 }
