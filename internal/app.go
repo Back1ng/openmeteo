@@ -34,20 +34,17 @@ func Run() {
 
 	ticker := time.NewTicker(time.Second * 50)
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				for {
-					weather, err := api.GetWeather(context.Background())
-					if err != nil {
-						fmt.Printf("Error: failed update weather: %v", err)
-					} else {
-						cache.Store(entity.Weather{
-							Temp: weather.Temp,
-						})
+		for _ = range ticker.C {
+			for {
+				weather, err := api.GetWeather(context.Background())
+				if err != nil {
+					fmt.Printf("Error: failed update weather: %v", err)
+				} else {
+					cache.Store(entity.Weather{
+						Temp: weather.Temp,
+					})
 
-						break
-					}
+					break
 				}
 			}
 		}
