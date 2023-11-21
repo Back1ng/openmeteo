@@ -24,10 +24,6 @@ func (c *Cache) Get() (*entity.Weather, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	if !c.IsValid() {
-		return nil, false
-	}
-
 	return &c.Weather, true
 }
 
