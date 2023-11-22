@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Back1ng/openmeteo/internal/entity"
-	weather_cache "github.com/Back1ng/openmeteo/internal/weather-cache"
+	weathercache "github.com/Back1ng/openmeteo/internal/weather-cache"
 	"io"
 	"net/http"
 	"net/url"
 )
 
 type Requester struct {
-	cache *weather_cache.Cache
+	cache *weathercache.Cache
 }
 
-func New(cache *weather_cache.Cache) Requester {
+func New(cache *weathercache.Cache) Requester {
 	return Requester{
 		cache: cache,
 	}

@@ -34,7 +34,7 @@ func Run() {
 
 	ticker := time.NewTicker(time.Second * 50)
 	go func() {
-		for _ = range ticker.C {
+		for range ticker.C {
 			for {
 				weather, err := api.GetWeather(context.Background())
 				if err != nil {
